@@ -13,8 +13,6 @@ import requests
 from gradio import State
 from gradio.blocks import Block, BlockContext
 
-from scripts.task_scheduler import get_dependencies
-
 is_windows = platform.system() == "Windows"
 is_macos = platform.system() == "Darwin"
 
@@ -208,7 +206,7 @@ def request_with_retry(
 ):
     try:
         res = make_request()
-        if res.status_code > 400:
+        if res.status_code > 400:  # ty:ignore[unsupported-operator]
             raise Exception(res.text)
 
         return True

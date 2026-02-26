@@ -10,15 +10,13 @@ import numpy as np
 import requests
 import torch
 from helpers import get_dict_attribute, log
-
-if TYPE_CHECKING:
-    from modules import images, img2img, scripts, sd_samplers, sd_vae, shared, txt2img
-    from modules.api.models import (
-        StableDiffusionImg2ImgProcessingAPI,
-        StableDiffusionTxt2ImgProcessingAPI,
-    )
-    from modules.generation_parameters_copypaste import create_override_settings_dict
-    from modules.sd_models import CheckpointInfo, get_closet_checkpoint_match
+from modules import images, img2img, scripts, sd_samplers, sd_vae, shared, txt2img
+from modules.api.models import (
+    StableDiffusionImg2ImgProcessingAPI,
+    StableDiffusionTxt2ImgProcessingAPI,
+)
+from modules.generation_parameters_copypaste import create_override_settings_dict
+from modules.sd_models import CheckpointInfo, get_closet_checkpoint_match
 from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps, PngImagePlugin
 
 img2img_image_args_by_mode: dict[int, List[List[str]]] = {
