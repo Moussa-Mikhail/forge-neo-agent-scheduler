@@ -1,39 +1,39 @@
-import io
-import os
-import json
 import base64
-import requests
+import io
+import json
+import os
 import threading
-from uuid import uuid4
-from zipfile import ZipFile
+from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from secrets import compare_digest
-from typing import Optional, Dict, List
-from datetime import datetime, timezone
-from collections import defaultdict
-from gradio.routes import App
-from PIL import Image
+from typing import Dict, List, Optional
+from uuid import uuid4
+from zipfile import ZipFile
+
+import requests
 from fastapi import Depends
+from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.exceptions import HTTPException
+from gradio.routes import App
+from modules import progress, sd_models, sd_samplers, shared
+from PIL import Image
 from pydantic import BaseModel
 
-from modules import shared, progress, sd_models, sd_samplers
-
 from .db import Task, TaskStatus, task_manager
+from .helpers import log, request_with_retry
 from .models import (
-    Txt2ImgApiTaskArgs,
-    Img2ImgApiTaskArgs,
-    QueueTaskResponse,
-    QueueStatusResponse,
     HistoryResponse,
+    Img2ImgApiTaskArgs,
+    QueueStatusResponse,
+    QueueTaskResponse,
     TaskModel,
+    Txt2ImgApiTaskArgs,
     UpdateTaskArgs,
 )
-from .task_runner import TaskRunner
-from .helpers import log, request_with_retry
 from .task_helpers import encode_image_to_base64, img2img_image_args_by_mode
+from .task_runner import TaskRunner
 
 
 def api_callback(callback_url: str, task_id: str, status: TaskStatus, images: list):
@@ -207,7 +207,7 @@ def regsiter_apis(app: App, task_runner: TaskRunner):
     def import_queue(queue: StringRequestBody):
         try:
             objList = json.loads(queue.content)
-            taskList: List[Task] = []
+            taskList: list[Task] = []
             for obj in objList:
                 if "id" not in obj or not obj["id"] or obj["id"] == "":
                     obj["id"] = str(uuid4())
@@ -294,7 +294,7 @@ def regsiter_apis(app: App, task_runner: TaskRunner):
             should_save = True
 
         if body.checkpoint or body.params:
-            params: Dict = json.loads(task.params)
+            params: dict = json.loads(task.params)
             if body.checkpoint is not None:
                 params["checkpoint"] = body.checkpoint
             if body.checkpoint is not None:

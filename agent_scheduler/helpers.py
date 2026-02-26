@@ -1,16 +1,19 @@
-import os
-import sys
 import abc
 import atexit
-import time
 import logging
+import os
 import platform
-import requests
+import sys
+import time
 import traceback
 from typing import Callable, List, NoReturn
 
 import gradio as gr
+import requests
+from gradio import State
 from gradio.blocks import Block, BlockContext
+
+from scripts.task_scheduler import get_dependencies
 
 is_windows = platform.system() == "Windows"
 is_macos = platform.system() == "Darwin"
@@ -19,6 +22,7 @@ if logging.getLogger().hasHandlers():
     log = logging.getLogger("sd")
 else:
     import copy
+
     class ColoredFormatter(logging.Formatter):
         COLORS = {
             "DEBUG": "\033[0;36m",  # CYAN
@@ -67,7 +71,8 @@ class Singleton(abc.ABCMeta, type):
         return cls._instances[cls]
 
 
-def compare_components_with_ids(components: List[Block], ids: List[int]):
+# noinspection PyProtectedMember
+def compare_components_with_ids(components: list[Block], ids: list[int]):
     return len(components) == len(ids) and all(
         component._id == _id for component, _id in zip(components, ids)
     )
@@ -87,8 +92,9 @@ def get_component_by_elem_id(root: Block, elem_id: str):
     return elem
 
 
-def get_components_by_ids(root: Block, ids: List[int]):
-    components: List[Block] = []
+# noinspection PyProtectedMember
+def get_components_by_ids(root: Block, ids: list[int]):
+    components: list[Block] = []
 
     if root._id in ids:
         components.append(root)
@@ -101,25 +107,24 @@ def get_components_by_ids(root: Block, ids: List[int]):
     return components
 
 
-def detect_control_net(root: gr.Blocks, submit: gr.Button):
-    UiControlNetUnit = None
+# noinspection PyProtectedMember
+def detect_control_net(root: gr.Blocks, submit: gr.Button) -> type | None:
+    ui_control_net_unit = None
 
-    dependencies: List[dict] = [
-        x
-        for x in root.dependencies
-        if x["trigger"] == "click" and submit._id in x["targets"]
-    ]
+    dependencies = get_dependencies(root)
+
     for d in dependencies:
-        if len(d["outputs"]) == 1:
-            outputs = get_components_by_ids(root, d["outputs"])
-            output = outputs[0]
-            if (
-                isinstance(output, gr.State)
-                and type(output.value).__name__ == "UiControlNetUnit"
-            ):
-                UiControlNetUnit = type(output.value)
+        if d["trigger"] == "click" and submit._id in d["targets"]:
+            if len(d["outputs"]) == 1:
+                outputs = get_components_by_ids(root, d["outputs"])
+                output = outputs[0]
+                if (
+                    isinstance(output, State)
+                    and type(output.value).__name__ == "UiControlNetUnit"
+                ):
+                    ui_control_net_unit = type(output.value)
 
-    return UiControlNetUnit
+    return ui_control_net_unit
 
 
 def get_dict_attribute(dict_inst: dict, name_string: str, default=None):
