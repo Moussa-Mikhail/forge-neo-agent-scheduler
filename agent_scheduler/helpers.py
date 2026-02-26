@@ -107,6 +107,40 @@ def get_components_by_ids(root: Block, ids: list[int]):
     return components
 
 
+def get_dependencies(root: gr.Blocks) -> list[dict]:
+    """
+    Return a list of dependency dicts like the old .dependencies
+    property, built from tracked events.
+    """
+    deps: list[dict] = []
+    tracked_events = getattr(root, "_tracked_events", [])
+
+    for event in tracked_events:
+        # source button
+        trigger_id = getattr(event, "source_component", None)
+        trigger_id = getattr(trigger_id, "_id", None) if trigger_id else None
+
+        # target components
+        target_ids = []
+        for out_comp in getattr(event, "outputs", []):
+            out_id = getattr(out_comp, "_id", None)
+            if out_id:
+                target_ids.append(out_id)
+
+        # each dependency mimics the old dict structure
+        deps.append(
+            {
+                "trigger": "click" if trigger_id else None,
+                "targets": target_ids,
+                "outputs": [
+                    getattr(o, "_id", None) for o in getattr(event, "outputs", [])
+                ],
+            }
+        )
+
+    return deps
+
+
 # noinspection PyProtectedMember
 def detect_control_net(root: gr.Blocks, submit: gr.Button) -> type | None:
     ui_control_net_unit = None
