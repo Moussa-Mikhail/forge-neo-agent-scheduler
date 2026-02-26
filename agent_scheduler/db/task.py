@@ -2,7 +2,7 @@ import base64
 import json
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from typing import ClassVar, List, Optional, Union
 
 from pydantic import BaseModel
 from sqlalchemy import (
@@ -66,7 +66,7 @@ class Task(TaskModel):
         super().__init__(priority=priority, **kwargs)
 
     class Config(BaseModel):
-        exclude = ["script_params"]
+        exclude: ClassVar[list[str]] = ["script_params"]
 
     @staticmethod
     def from_table(table: "TaskTable"):
